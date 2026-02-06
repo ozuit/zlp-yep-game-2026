@@ -83,6 +83,9 @@ const SYMBOLS = [
   { label: "ETH/USDT", tvSymbol: "BINANCE:ETHUSDT", apiSymbol: "ETHUSDT" },
 ] as const;
 
+const TOTAL_ROUNDS = 2;
+const ROUND_DURATION_SECONDS = 10;
+
 async function fetchPriceFromBinance(apiSymbol: string): Promise<number> {
   const endpoints = [
     "https://api.binance.com/api/v3/ticker/price",
@@ -165,7 +168,7 @@ export default function App() {
 
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const [roundIndex, setRoundIndex] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState<number>(10);
+  const [secondsLeft, setSecondsLeft] = useState<number>(ROUND_DURATION_SECONDS);
   const [results, setResults] = useState<GameRoundResult[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -183,7 +186,7 @@ export default function App() {
   async function startRound(nextRoundIndex: number) {
     clearTimers();
     setError(null);
-    setSecondsLeft(10);
+    setSecondsLeft(ROUND_DURATION_SECONDS);
     setRoundIndex(nextRoundIndex);
 
     const startPrice = await fetchPriceFromBinance(selectedSymbol.apiSymbol);
@@ -215,7 +218,7 @@ export default function App() {
         ]);
 
         const finishedRoundCount = nextRoundIndex + 1;
-        if (finishedRoundCount >= 3) {
+        if (finishedRoundCount >= TOTAL_ROUNDS) {
           setPhase("done");
         } else {
           // Đợi người chơi bấm Bắt đầu lần tiếp theo
@@ -225,14 +228,14 @@ export default function App() {
         setError(e instanceof Error ? e.message : "Không thể lấy giá.");
         setPhase("idle");
       }
-    }, 10_000);
+    }, ROUND_DURATION_SECONDS * 1000);
   }
 
   function resetGame() {
     clearTimers();
     setPhase("idle");
     setRoundIndex(0);
-    setSecondsLeft(10);
+    setSecondsLeft(ROUND_DURATION_SECONDS);
     setResults([]);
     setError(null);
     activeRoundStartPriceRef.current = null;
@@ -242,7 +245,7 @@ export default function App() {
     // Đang chạy thì không cho bấm tiếp (dùng nút Dừng / Reset)
     if (phase === "playing") return;
 
-    const isNewGame = phase === "done" || results.length >= 3;
+    const isNewGame = phase === "done" || results.length >= TOTAL_ROUNDS;
     if (isNewGame) {
       resetGame();
     }
@@ -298,11 +301,11 @@ export default function App() {
           </h1>
           <p className="text-xl text-slate-300 mb-3 mx-auto">
             Thử tài dự đoán thị trường tài chính siêu tốc trong{" "}
-            <span className="text-yellow-400 font-bold">30 giây</span> và giành
+            <span className="text-yellow-400 font-bold">20 giây</span> và giành
             lấy phần quà hấp dẫn!
           </p>
           <p className="text-xl text-slate-300 mb-8 mx-auto font-bold">
-            "Đủ 3 hộp mù vào vòng chung kết, người cuối cùng đoán đúng sẽ giành
+            "Đủ 2 hộp mù vào vòng chung kết, người cuối cùng đoán đúng sẽ giành
             giải đặc biệt"
           </p>
         </div>
@@ -326,8 +329,8 @@ export default function App() {
                   },
                   {
                     icon: IconClock,
-                    title: "2. Ghi Nhận trong 30s",
-                    desc: "Đoán liên tiếp 3 lần. Mỗi lần là 10s biến động.",
+                      title: "2. Ghi Nhận trong 20s",
+                      desc: "Đoán liên tiếp 2 lần. Mỗi lần là 10s biến động.",
                   },
                   {
                     icon: IconGift,
@@ -360,11 +363,11 @@ export default function App() {
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
 
                   <div className="space-y-1.5 lg:space-y-2">
-                    {/* Reward 1: 3 correct */}
+                    {/* Reward 1: 2 correct */}
                     <div className="flex items-center gap-2 lg:gap-3 bg-yellow-50 border-2 border-yellow-200 rounded-lg p-1.5 lg:p-2 transition hover:scale-105 shadow-sm">
                       <div className="bg-yellow-500 text-white w-10 h-10 lg:w-12 lg:h-12 rounded-lg flex flex-col items-center justify-center font-bold shadow-lg shrink-0">
                         <span className="text-base lg:text-lg leading-none">
-                          3
+                          2
                         </span>
                         <span className="text-[7px] lg:text-[8px] uppercase font-bold opacity-90">
                           Lần Đúng
@@ -381,11 +384,11 @@ export default function App() {
                       <div className="text-xl lg:text-2xl shrink-0">🦊</div>
                     </div>
 
-                    {/* Reward 2: 1-2 correct */}
+                    {/* Reward 2: 1 correct */}
                     <div className="flex items-center gap-2 lg:gap-3 bg-blue-50 border-2 border-blue-200 rounded-lg p-1.5 lg:p-2 transition hover:scale-105 shadow-sm">
                       <div className="bg-blue-500 text-white w-10 h-10 lg:w-12 lg:h-12 rounded-lg flex flex-col items-center justify-center font-bold shadow-lg shrink-0">
                         <span className="text-sm lg:text-base leading-none">
-                          1-2
+                          1
                         </span>
                         <span className="text-[7px] lg:text-[8px] uppercase font-bold opacity-90">
                           Lần Đúng
@@ -409,7 +412,7 @@ export default function App() {
             {/* Right Column: Banner */}
             <div className="bg-slate-800 rounded-3xl border border-slate-700 aspect-square overflow-hidden flex items-center justify-center">
               <img
-                src="/special-prize-banner.png"
+                src={`${import.meta.env.BASE_URL}special-prize-banner.png`}
                 alt="Special Prize Banner"
                 className="w-full h-full object-cover"
               />
@@ -439,7 +442,9 @@ export default function App() {
                       <span className="font-bold text-white">Giảm</span> hoặc{" "}
                       <span className="font-bold text-white">Không đổi</span>.
                       Bấm đủ{" "}
-                      <span className="font-bold text-yellow-400">3 lần</span>{" "}
+                      <span className="font-bold text-yellow-400">
+                        {TOTAL_ROUNDS} lần
+                      </span>{" "}
                       để hoàn thành 1 lượt chơi.
                     </p>
                   </div>
@@ -470,7 +475,9 @@ export default function App() {
                         Lượt hiện tại
                       </div>
                       <div className="text-white font-black text-lg">
-                        {phase === "done" ? "Kết thúc" : `${roundIndex + 1}/3`}
+                        {phase === "done"
+                          ? "Kết thúc"
+                          : `${roundIndex + 1}/${TOTAL_ROUNDS}`}
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between">
@@ -490,11 +497,12 @@ export default function App() {
                       Lần ghi nhận
                     </div>
                     <div className="mt-1 text-white font-black text-3xl tabular-nums">
-                      {results.length}/3
+                      {results.length}/{TOTAL_ROUNDS}
                     </div>
                     <div className="mt-2 text-slate-400 text-xs">
                       Mỗi lần bấm Bắt đầu, hệ thống sẽ ghi lại 1 lần biến động
-                      giá sau 10 giây. Ghi đủ 3 lần để hoàn tất 1 lượt chơi.
+                      giá sau 10 giây. Ghi đủ {TOTAL_ROUNDS} lần để hoàn tất 1
+                      lượt chơi.
                     </div>
                   </div>
                 </div>
@@ -510,7 +518,7 @@ export default function App() {
                 <div className="h-full flex items-center justify-center bg-slate-900/70 border border-slate-700/80 rounded-2xl p-4">
                   <div className="bg-white rounded-2xl p-2 shadow-2xl">
                     <img
-                      src="/qr-thanh-toan.png"
+                      src={`${import.meta.env.BASE_URL}qr-thanh-toan.png`}
                       alt="QR thanh toán VIETQR - Zalopay"
                       className="w-40 h-40 lg:w-44 lg:h-44 object-contain rounded-xl"
                     />
@@ -522,17 +530,15 @@ export default function App() {
               <div className="mt-4 bg-slate-900/30 border border-slate-700/50 rounded-2xl p-4">
                 <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
                   <div className="text-slate-300 text-sm font-bold">
-                    Lịch sử 3 lần ghi nhận (mỗi lần 10 giây)
+                    Lịch sử {TOTAL_ROUNDS} lần ghi nhận (mỗi lần 10 giây)
                   </div>
                   <div className="text-slate-400 text-xs">
                     Đã ghi:{" "}
-                    <span className="text-white font-bold">
-                      {results.length}
-                    </span>
-                    /3
+                    <span className="text-white font-bold">{results.length}</span>
+                    /{TOTAL_ROUNDS}
                   </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {results.map((r) => {
                     const label =
                       r.direction === "UP"
